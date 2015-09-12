@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+    <title>Photobooth</title>
+    <link rel="stylesheet" href="{{ url_for('.static', filename='normalize.css') }}" type="text/css" />
+    <link rel="stylesheet" href="{{ url_for('.static', filename='photobooth.css') }}" type="text/css" />
+
+</head>
+<body>
+
+<div id="photo"></div>
+<div id="go-button">
+    <span>When you're ready, press the big button...</span>
+    <a href="javascript:go()">GO!</a>
+</div>
+<div id="buttons">
+    <a href="javascript:print_and_tweet()" class="button">Print &amp; Tweet</a>
+    <a href="javascript:print()" class="button">Just Print</a>
+    <a href="javascript:try_again()" class="button">Try Again</a>
+</div>
+<div id="counter"></div>
+
+<script src="{{ url_for('.static', filename='jquery-1.11.3.min.js') }}"></script>
+<script src="{{ url_for('.static', filename='photobooth.js') }}"></script>
+
+</body>
+</html>
