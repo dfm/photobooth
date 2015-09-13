@@ -5,12 +5,15 @@ from __future__ import division, print_function
 
 __all__ = ["app"]
 
+import os
 import glob
 import string
 import random
 import subprocess as sp
 
 import tweepy
+from skimage import img_as_ubyte
+from skimage.transform import resize
 from skimage.io import imread, imsave
 
 import flask
@@ -28,9 +31,39 @@ def index():
     return flask.render_template("index.html")
 
 
+def _is_camera_good():
+    job = sp.Popen(["killall", "PTPCamera"])
+    job.communicate()
+
+    job = sp.Popen(["gphoto2", "--auto-detect"])
+    job.communicate()
+    if job.returncode:
+        return False
+
+    job = sp.Popen(["gphoto2", "--summary"])
+    job.communicate()
+    if job.returncode:
+        return False
+
+    return True
+
+
+@app.route("/setup")
+def setup():
+    if not _is_camera_good():
+        return "Try unplugging the USB", 500
+        # response = flask.jsonify(error="Try unplugging the USB")
+        # response.status_code = 500
+        # return response
+    return flask.jsonify(message="Success")
+
+
 @app.route("/take")
 @app.route("/take/<int:ind>")
 def take_photo(ind=0):
+    if ind == 0 and not _is_camera_good():
+        return "Try unplugging the USB", 500
+
     fn = "scratch/out-{0:03d}.jpg".format(ind)
     if app.config["webcam"]:
         job = sp.Popen(["imagesnap", "-w", "1.00", fn])
@@ -42,7 +75,18 @@ def take_photo(ind=0):
         ])
     job.communicate()
     if job.returncode:
-        return flask.abort(500)
+        # Retry...
+        if app.config["webcam"]:
+            job = sp.Popen(["imagesnap", "-w", "1.00", fn])
+        else:
+            job = sp.Popen([
+                "gphoto2", "--capture-image-and-download",
+                "--filename", fn,
+                "--force-overwrite"
+            ])
+        job.communicate()
+        if job.returncode:
+            return "Try unplugging the USB", 500
 
     chars = "".join(random.choice(ID_CHARS) for _ in range(10))
     result = dict(filename="{0}?v={1}".format(fn, chars))
@@ -83,32 +127,38 @@ def print_photo(filename):
         )
         api = tweepy.API(auth)
         api.update_with_media("output/{0}-twitter{1}"
-                              .format(*(filename.splitext())),
+                              .format(*(os.path.splitext(filename))),
                               status="Just partyin' #photobooth")
 
-    job = sp.Popen(
-        ("lp -o media=4x6,photographic-glossy -o landscape "
-         "-o fit-to-page").split() + ["output/" + filename]
-    )
-    job.communicate()
-    if job.returncode:
-        return flask.abort(500)
+    if flask.request.args.get("print", "no") == "yes":
+        job = sp.Popen(
+            ("lp -o media=4x6,photographic-glossy -o landscape "
+             "-o fit-to-page").split() + ["output/" + filename]
+        )
+        job.communicate()
+        if job.returncode:
+            return flask.abort(500)
 
     return flask.jsonify(message="Success")
 
 
-def stitch_images(images, border=16, bottom=100):
-    height = images[0].shape[0]
-    full_height = 3*border + bottom + 2*height
-    full_width = int(full_height*1.5)
-    width = int(0.5 * (full_width - 3*border))
-    full_image = imread("static/template.jpg")
-    delta = int(0.5 * (images[0].shape[1] - width))
+def stitch_images(images, border=24, bottom=2*100, scale=0.5):
+    # Resize the images.
+    images = [img_as_ubyte(resize(i, (scale*i.shape[0], scale*i.shape[1])))
+              for i in images]
+
+    width = int(images[0].shape[1])
+    full_width = 3 * border + 2 * width
+    full_height = int(full_width//1.5)
+    height = int(0.5 * (full_height - bottom - 3 * border))
+    delta = int(0.5 * (images[0].shape[0] - height))
+
+    full_image = imread("static/template-full.jpg")
 
     for i, img in enumerate(images[:4]):
         xi = border + (i // 2) * (border + height)
         yi = border + (i % 2) * (border + width)
-        full_image[xi:xi+height, yi:yi+width] = img[:, delta:delta+width]
+        full_image[xi:xi+height, yi:yi+width] = img[delta:delta+height]
 
     return (full_image[border:-border, border:-border],
             full_image[:3*border+2*height, :3*border+2*width])

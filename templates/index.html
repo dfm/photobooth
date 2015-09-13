@@ -18,9 +18,15 @@
 <div id="buttons">
     <a href="javascript:print_and_tweet()" class="button">Print &amp; Tweet</a>
     <a href="javascript:print()" class="button">Just Print</a>
+    <a href="javascript:tweet()" class="button">Just Tweet</a>
     <a href="javascript:try_again()" class="button">Try Again</a>
 </div>
+<div id="working">Working...</div>
 <div id="counter"></div>
+<div id="error">
+    <div id="error-inner"></div>
+    <a href="javascript:try_again()" class="button">Try Again</a>
+</div>
 
 <script src="{{ url_for('.static', filename='jquery-1.11.3.min.js') }}"></script>
 <script src="{{ url_for('.static', filename='photobooth.js') }}"></script>

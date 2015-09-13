@@ -63,6 +63,17 @@ body {
     transform: translate(-50%, -50%);
 }
 
+#working {
+    display: none;
+    position: absolute;
+    font-size: 120px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 #buttons {
     width: 100%;
     text-align: center;
@@ -73,7 +84,7 @@ body {
     transform: translate(-50%, -50%);
 }
 
-#buttons a {
+a.button {
     font-size: 48px;
     text-decoration: none;
     background: rgba(255,255,255,0.6);
@@ -84,6 +95,24 @@ body {
     margin: 0 5px;
 }
 
-#buttons a:hover {
+a.button:hover {
     background: rgba(255,255,255,1.0);
+}
+
+#error {
+    width: 100%;
+    text-align: center;
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#error-inner {
+    color: red;
+    font-size: 48px;
+    font-weight: bold;
+    display: block;
+    padding: 50px 0;
 }
